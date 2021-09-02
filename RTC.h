@@ -6,7 +6,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-byte get_RTC_data(byte reg_address, String name);
+byte get_RTC_data(byte reg_address, String name, bool debug);
 
 byte get_RTC_secs();
 
@@ -18,5 +18,6 @@ bool set_RTC_time(int date, int month, int day, int hour);
 
 bool set_RTC_alarm();
 
+void flush_status();
 
 #endif

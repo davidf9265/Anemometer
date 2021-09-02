@@ -149,18 +149,42 @@ bool set_RTC_alarm(){
 
     //para A1M1, el registro 0x07
     //además, se necesita configurar los segundos en 0
+    
     Wire.beginTransmission(RTC_ADDRESS);
     Wire.write(0x07); //dirige a segundos de alarma
-    Wire.write(1<<7); //escribe 0 segundos, activa A1M1
+    Wire.write(B00000000); //escribe 0 segundos, activa A1M1
     Wire.endTransmission();
 
     //para A1M2, el registro 0x08
-    //además, se necesita configurar los minutos en 0
+    //además, se necesita configurar los minutos en 2
     Wire.beginTransmission(RTC_ADDRESS);
-    Wire.write(0x08); //dirige a segundos de alarma
-    Wire.write(1<<7); //escribe 0 segundos, activa A1M1
+    Wire.write(0x08); //dirige a minutos de alarma
+    Wire.write(B00000001); //escribe 1 minutos, activa A1M2
     Wire.endTransmission();
 
+    Wire.beginTransmission(RTC_ADDRESS);
+    Wire.write(0x09); //dirige a minutos de alarma
+    Wire.write(B10000000); //escribe 1 minutos, activa A1M2
+    Wire.endTransmission();
+
+    Wire.beginTransmission(RTC_ADDRESS);
+    Wire.write(0x0A); //dirige a minutos de alarma
+    Wire.write(B10000000); //escribe 1 minutos, activa A1M2
+    Wire.endTransmission();
+
+    //Control register configuración para interruocion 
+    //en pin SQW/INT 
+    Wire.beginTransmission(RTC_ADDRESS);
+    Wire.write(0x0E); //registro de control
+    Wire.write(B00000101); //
+    Wire.endTransmission();
+
+
+    //bajar el flag de la alarma
+    Wire.beginTransmission(RTC_ADDRESS);
+    Wire.write(0x0F); //registro de control
+    Wire.write(B10001000); //
+    Wire.endTransmission();
 
     Serial.print("Segundos Alarma: ");
     Serial.println(get_RTC_data(0x07,"Segundos Alarma", false),BIN);
@@ -168,4 +192,12 @@ bool set_RTC_alarm(){
     Serial.println(get_RTC_data(0x08,"Minutos Alarma", false),BIN);
     Serial.print("Horas Alarma: ");
     Serial.println(get_RTC_data(0x09,"Horas Alarma", false),BIN);
+}
+
+void flush_status(){
+    //bajar el flag de la alarma
+    Wire.beginTransmission(RTC_ADDRESS);
+    Wire.write(0x0F); //registro de control
+    Wire.write(B10001000); //
+    Wire.endTransmission();
 }
