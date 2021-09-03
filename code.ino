@@ -1,12 +1,18 @@
+//#ifndef __INTELLISENSE__ sleep_enable(); #endif
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <SPI.h>
+#include <SD.h>
 //#include <Wire.h> // importado en el RTC.h
 #include "RTC.h"
 
 
 //parametros globales (macros)
 #define SAMPLE_SIZE 10
+#define SAVE_FULL_TIME false
+#define DEBUG_SPEED 2.887f
 //#define RTC_ADDRESS 0x68 //B1101000
 
 //variables globales de estado
@@ -17,47 +23,61 @@ bool flag_RTC,
         flag_show,
         flag_sleep = false;
 
+//variables globales de tiempo
+byte DD,
+        MM,
+        AA,
+        DY,
+        h,
+        m,
+        s = 0;
+
+//variable para el archivo de la SD
+File myFile;
 
 //función sleep
 void goingToSleep(){
     attachInterrupt(digitalPinToInterrupt(2), wakeUp, LOW);
+    Serial.println("Int OK");
     
     sleep_enable();
-    Serial.print("Enabling interrupts");
     
+    Serial.println("Set sleep");
     
-    Serial.print("Setting sleep configs");
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    Serial.print("Led off");
-    digitalWrite(LED_BUILTIN, LOW);
-    Serial.print("cpu off");
-    //attachInterrupt(digitalPinToInterrupt(2), wakeUp, LOW);
-    delay(5000);
-    
-    sleep_cpu();
-    Serial.println("woke up!");
-    digitalWrite(LED_BUILTIN, HIGH);
-}
 
+    //digitalWrite(LED_BUILTIN, LOW);
+    
+    Serial.println("cpu off");
+    delay(5000);
+    sleep_cpu();
+
+    Serial.println("woke up!");
+    //digitalWrite(LED_BUILTIN, HIGH);
+}
 
 //función wake up
 void wakeUp(){
-    Serial.print("interrupted");
+    Serial.println("int.");
     sleep_disable();
     detachInterrupt(digitalPinToInterrupt(2));
     flag_RTC = true;
-    Serial.println("waking up!");
 }
+
+
+
 
 void setup()
 {
     //configuración de pines
     pinMode(2, INPUT_PULLUP); //int0
-    pinMode(LED_BUILTIN, OUTPUT); //LED  pin
+    //pinMode(LED_BUILTIN, OUTPUT); //LED  pin
 
     //pin habilitación de circuitos
     pinMode(7, OUTPUT); 
 
+    //habilitación de SD
+    //pinMode(1, OUTPUT);
 
 	//ajuste Debugging
     Serial.begin(115200);
@@ -66,76 +86,116 @@ void setup()
     //dirección generica del DS
     delay(1000);
 
-    Serial.println("Iniciando RTC...");
+    Serial.println("RTC OK");
     Wire.begin(RTC_ADDRESS);
     set_RTC_time(29, 8, 7, 11); //date, month, day, hour
 
     //configurar alarma
-    Serial.println("Configurando alarma predefinida...");
+    Serial.println("Configurando alarma");
     set_RTC_alarm();
 
+    delay(1000);
     //flag sleep inicial
     flag_sleep = true;
 
-    delay(5000);
+    if(!SD.begin(10)){
+        Serial.println("SD broke");
+        return;
+    }
 
-    Serial.println("Activando modo sleep...");
+    delay(5000);
 }
+
+
+
 
 void loop()
 {
     //Print hour
-    Serial.print("Hora: ");
-    Serial.print(get_RTC_hour());
-    Serial.print(" Minutos: ");
-    Serial.print(get_RTC_mins());
-    Serial.print(" Segundos: ");
-    Serial.println(get_RTC_secs());
+    Serial.print("h: ");
+    Serial.print(h = get_RTC_hour());
+    Serial.print(" m: ");
+    Serial.print(m = get_RTC_mins());
+    Serial.print(" s: ");
+    Serial.println(s = get_RTC_secs());
 
-    Serial.print("Status: ");
-    Serial.println(get_RTC_data(0x0F,"Status",false),BIN);
+    Serial.print("Stat: ");
+    Serial.println(get_RTC_data(0x0F,"stat",false),BIN);
 
 	if(flag_RTC){
-        Serial.println("Habilitación de los  circuitos periféricos");
+        digitalWrite(7, HIGH);
         //habilitación de los circuitos perifericos
+        
+        Serial.println("Perifericos OK");
+        
         flag_RTC = false;
         flag_speed_detect = true;
     }
 
     if(flag_speed_detect){
-        Serial.println("Detección de velocidad");
         //el bucle for se utiliza como verificador de
         //muestra completa
+        delay(5000);
         for(int i = 0; i > SAMPLE_SIZE ; i++){
             //algoritmo de detección de velocidad
         }
+
+        Serial.println("vel. viento OK");
+
         flag_speed_detect = false;
         flag_statistics = true;
     }
 
     if(flag_statistics){
-        Serial.println("Cálculos estadísticos");
+        
         //promedios y otros cálculos estadísticos
+        Serial.println("Stat. OK");
+
         flag_statistics = false;
         flag_store = true;
     }
 
     if(flag_store){
-        Serial.println("Almacenamiento de la información en SD");
         //store in SD
+        Serial.print("op");
+
+        delay(1000);
+        myFile = SD.open("data.txt", FILE_WRITE);
+
+        if(myFile){
+            if(SAVE_FULL_TIME){
+                //nothing yet
+            }
+            else{
+                myFile.print("h"+h);
+                myFile.print(",m"+m);
+                myFile.print(",s"+s);
+                myFile.print(",v"+String(DEBUG_SPEED,2));
+                Serial.print("Wr");
+            }
+            Serial.print("Cl");
+            myFile.close();
+        }
+        
+        Serial.println("Store OK");
+        delay(1000);
+
         flag_store = false;
         flag_show = true;
     }
 
     if(flag_show){
-        Serial.println("Visualización de los datos");
-        //mostrar en SD
+        
+        //mostrar en LCD
+        Serial.println("LCD OK");
+        
         flag_show = false;
         flag_sleep = true;
     }
 
     if(flag_sleep){
-        Serial.println("Estado de reposo: Micro 'sleepmode' Circuitos apagados");
+        Serial.println("Sleeping");
+        digitalWrite(7, LOW);
         //modo de bajo consumo
 
         flag_sleep = false;

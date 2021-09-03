@@ -152,24 +152,24 @@ bool set_RTC_alarm(){
     
     Wire.beginTransmission(RTC_ADDRESS);
     Wire.write(0x07); //dirige a segundos de alarma
-    Wire.write(B00000000); //escribe 0 segundos, activa A1M1
+    Wire.write(B00100000); //escribe 0 segundos, desactiva A1M1
     Wire.endTransmission();
 
     //para A1M2, el registro 0x08
     //además, se necesita configurar los minutos en 2
     Wire.beginTransmission(RTC_ADDRESS);
     Wire.write(0x08); //dirige a minutos de alarma
-    Wire.write(B00000001); //escribe 1 minutos, activa A1M2
+    Wire.write(B00000000); //escribe 1 minutos, desactiva A1M2
     Wire.endTransmission();
 
     Wire.beginTransmission(RTC_ADDRESS);
     Wire.write(0x09); //dirige a minutos de alarma
-    Wire.write(B10000000); //escribe 1 minutos, activa A1M2
+    Wire.write(B10000000); //escribe 0 horas, activa A1M3
     Wire.endTransmission();
 
     Wire.beginTransmission(RTC_ADDRESS);
     Wire.write(0x0A); //dirige a minutos de alarma
-    Wire.write(B10000000); //escribe 1 minutos, activa A1M2
+    Wire.write(B10000000); //escribe 0 dias, activa A1M4
     Wire.endTransmission();
 
     //Control register configuración para interruocion 
