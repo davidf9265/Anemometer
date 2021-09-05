@@ -13,6 +13,7 @@
 #define SAMPLE_SIZE 10
 #define SAVE_FULL_TIME false
 #define DEBUG_SPEED 2.887f
+#define POWER_CIRCUIT_PHASE 10 //10 milisegundos
 //#define RTC_ADDRESS 0x68 //B1101000
 
 //variables globales de estado
@@ -91,7 +92,7 @@ void setup()
     set_RTC_time(29, 8, 7, 11); //date, month, day, hour
 
     //configurar alarma
-    Serial.println("Configurando alarma");
+    Serial.println("CA");
     set_RTC_alarm();
 
     delay(1000);
@@ -128,6 +129,9 @@ void loop()
         
         Serial.println("Perifericos OK");
         
+        //espera a que se activen los perifericos
+        delay(POWER_CIRCUIT_PHASE);
+
         flag_RTC = false;
         flag_speed_detect = true;
     }
@@ -167,10 +171,15 @@ void loop()
                 //nothing yet
             }
             else{
-                myFile.print("h"+h);
-                myFile.print(",m"+m);
-                myFile.print(",s"+s);
-                myFile.print(",v"+String(DEBUG_SPEED,2));
+                //myFile.print("h"+h);
+                myFile.println("h"
+                                + String(h)
+                                + ",m" 
+                                + String(m) 
+                                + ",s" 
+                                + String(s)
+                                + ",v" 
+                                + String(DEBUG_SPEED,2));
                 Serial.print("Wr");
             }
             Serial.print("Cl");
