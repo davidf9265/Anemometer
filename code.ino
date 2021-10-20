@@ -14,6 +14,10 @@
 #define SAVE_FULL_TIME false
 #define DEBUG_SPEED 2.887f
 #define POWER_CIRCUIT_PHASE 10 //10 milisegundos
+
+#define scsp 5
+#define sest 6
+#define ss 7
 //#define RTC_ADDRESS 0x68 //B1101000
 
 //variables globales de estado
@@ -75,7 +79,7 @@ void setup()
     //pinMode(LED_BUILTIN, OUTPUT); //LED  pin
 
     //pin habilitación de circuitos
-    pinMode(7, OUTPUT); 
+    pinMode(scsp, OUTPUT); 
 
     //habilitación de SD
     //pinMode(1, OUTPUT);
@@ -95,9 +99,11 @@ void setup()
     Serial.println("CA");
     set_RTC_alarm();
 
+    config_PWM()
+
     delay(1000);
-    //flag sleep inicial
-    flag_sleep = true;
+    //flag RTC inicial para iniciar la FSM
+    flag_RTC = true;
 
     if(!SD.begin(10)){
         Serial.println("SD broke");
@@ -124,7 +130,7 @@ void loop()
     Serial.println(get_RTC_data(0x0F,"stat",false),BIN);
 
 	if(flag_RTC){
-        digitalWrite(7, HIGH);
+        digitalWrite(scsp, HIGH);
         //habilitación de los circuitos perifericos
         
         Serial.println("Perifericos OK");
@@ -204,7 +210,7 @@ void loop()
 
     if(flag_sleep){
         Serial.println("Sleeping");
-        digitalWrite(7, LOW);
+        digitalWrite(scsp, LOW);
         //modo de bajo consumo
 
         flag_sleep = false;

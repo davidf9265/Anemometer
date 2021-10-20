@@ -4,34 +4,33 @@
 //#define ledPin3 7 // pin prueba 3
 #define Fclk 16000000.0 // frecuencia del relog
 #define selPin 7 // pin para seleccionar emisor-receptor
-#define distancia_sensores 0.12
+#define distancia_sensores 0.10
 #define regFrecuency 199 //este valor determina el valor del registo de comparacion con prescales de 1 frecuencia 40 kHz clk=16 MHz, segun calculos debe ser 199 segun ensayo y error 12
 
 // VARIABLES GLOBALES
 
 double regtime_pwm=0; // registro numero de overflow pwm
 double regtime_vuelo=0; // registro numero de overflow contador tiempo de vuelo
-double m=0;
+double v=0;
 
 bool flag_ic; // flag "input capture"
 int flag_contador=0;
 
-void setup()
+void config_PWM()
 {
+  pinMode(pwmPin,OUTPUT); 
   pinMode(ledPin,OUTPUT); 
- // pinMode(ledPin2,OUTPUT);
-//  pinMode(ledPin3,OUTPUT);
+  // pinMode(ledPin2,OUTPUT);
+  //  pinMode(ledPin3,OUTPUT);
   pinMode(selPin, OUTPUT);
- //pwm_on(199);
- Serial.begin(9600);
- // contador_tiempo_vuelo_on();
-
-
+  //pwm_on(199);
+  //Serial.begin(9600);
+  // contador_tiempo_vuelo_on();
 }
 void loop()
 {
-  
- m=deteccion_velocidad();
+  contador_tiempo_vuelo_off();
+  v=deteccion_velocidad();
  
   Serial.print("velocidad: "); 
   //Serial.print("\n");
@@ -40,10 +39,10 @@ void loop()
 // digitalWrite(ledPin2, digitalRead(ledPin2) ^ 1);
  // m=leer_reg_cont();
  // Serial.print("tiempo de vuelo: "); 
-  Serial.println(m,10);
+  Serial.println(v);
   //Serial.println("   ");
 
- // while(1);
+  //while(1);
 
 }
 //INTERRUPCIONES PWM
@@ -53,7 +52,7 @@ void loop()
 ISR(TIMER1_OVF_vect)          // interrupción por igualdade de comparación en TIMER1
 {
    // digitalWrite(ledPin, digitalRead(ledPin) ^ 1);
-    //pwm_off();
+    pwm_off();
     addRegTime(regtime_vuelo);
    
     
@@ -63,7 +62,7 @@ ISR(TIMER1_CAPT_vect)          // interrupción por igualdade de comparación en
 {
     contador_tiempo_vuelo_off();
     flag_ic=true; //flag producido pro una deteccion de señal
-  // digitalWrite(ledPin, digitalRead(ledPin) ^ 1);
+   digitalWrite(ledPin, digitalRead(ledPin) ^ 1);
 
    
   
@@ -92,9 +91,12 @@ void pwm_off(){ // desactiva el pwm
 
 // CONFIGURACION TIEMPO DE VUELO
 void contador_tiempo_vuelo_off(){
+  TIMSK1=0;
   TCCR1B=(1<<WGM13); //detiene la deteccion de la señal de entrada
    TCCR1B&=~((1<<CS10)); //detiene el reloj
+    
    pwm_off();
+  
    flag_contador=0;
    
   }
@@ -145,11 +147,14 @@ void addRegTime(int reg){
 
   //DETECCION DE VELOCIDAD
   double deteccion_velocidad(){
-  digitalWrite(selPin, LOW);
+    
+  //digitalWrite(selPin, LOW);
   double velocidad;
-  double tiempo_vuelo[]={0,0};
   int i=0; 
+  double tiempo_vuelo[]={0,0};
     while(tiempo_vuelo[1]==0){
+        regtime_vuelo=0;
+        digitalWrite(selPin, digitalRead(ledPin) ^ 1);
         contador_tiempo_vuelo_off();
         //pwm_off();
          
@@ -157,28 +162,34 @@ void addRegTime(int reg){
         while( flag_ic==false){
        
             if(flag_contador==0){
-               regtime_vuelo=0;
+               
                pwm_on(regFrecuency); // poner limite tiempo al pwm
                contador_tiempo_vuelo_on();
                 }
-            if(regtime_vuelo>16000000){
+            if(regtime_vuelo>244){
+               //regtime_vuelo=0;
               contador_tiempo_vuelo_off();
+               
                }
         }
 
   contador_tiempo_vuelo_off(); 
 
   tiempo_vuelo[i]=leer_reg_cont();
-   digitalWrite(selPin, digitalRead(selPin) ^ 1);
+ 
       
-    Serial.print(" tof1 ");
-    Serial.print(tiempo_vuelo[0],15);
-    Serial.print(" tof2 ");
-    Serial.print(tiempo_vuelo[1],15);
-    Serial.print("  ");
+    //Serial.print(" tof1 ");
+    //Serial.print(tiempo_vuelo[0]);
+    //Serial.print(" tof2 ");
+    //Serial.print(tiempo_vuelo[1]);
+    //Serial.print("  ");
     i=i+1; 
    }
-    
+    //Serial.print(" tof1 ");
+    //Serial.print(tiempo_vuelo[0]);
+   /// Serial.print(" tof2 ");
+    //Serial.print(tiempo_vuelo[1]);
+    //Serial.print("  ");
    return calculo_velocidad(tiempo_vuelo[0], tiempo_vuelo[1], distancia_sensores);
   }
 //double concatenar_registros(byte a, byte b){
